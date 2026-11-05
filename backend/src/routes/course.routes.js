@@ -1,5 +1,6 @@
 
 import { Router } from "express";
+import sectionRoutes from "./section.routes.js";
 
 import {
   createCourse,
@@ -18,6 +19,9 @@ import {
 } from "../middlewares/course-access.middleware.js";
 
 const router = Router();
+
+// Quản lý chương thuộc một khóa học.
+router.use("/:courseId/sections", sectionRoutes);
 
 // CREATE COURSE
 router.post(
