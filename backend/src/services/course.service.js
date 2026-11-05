@@ -103,7 +103,7 @@ const validateTags = async (tagIds = []) => {
   return tags.map((tag) => tag._id);
 };
 
-// Kiểm tra Instructor có tài khoản hoạt động và đã được duyệt.
+// Kiểm tra Instructor có tài khoản hoạt động và hồ sơ giảng viên đã được duyệt.
 const validateInstructor = async (instructorId) => {
   if (!isValidId(instructorId)) {
     throw createError("Instructor ID không hợp lệ.");
@@ -221,7 +221,7 @@ export const getCourses = async (query, user) => {
   // Lọc theo trạng thái hợp lệ.
   if (
     query.status &&
-    !["draft", "pending", "published", "rejected"].includes(query.status)
+    !["draft", "published"].includes(query.status)
   ) {
     throw createError("Trạng thái khóa học không hợp lệ.");
   }
@@ -310,20 +310,79 @@ export const getCourseById = async (courseId, user) => {
   return course;
 };
 
-// 4. UPDATE COURSE
+// 4. GET MY COURSES
+// Danh sách khóa học do giảng viên hiện tại sở hữu, gồm cả draft và published.
+export const getMyCourses = async (query, user) => {
+  if (user.role !== "instructor") {
+    throw createError("Chức năng này chỉ dành cho giảng viên.", 403);
+  }
+
+  return getCourses({ ...query, status: query.status }, user);
+};
+
+// 5. PUBLISH COURSE
+// Xuất bản trực tiếp, không có trạng thái chờ Admin duyệt.
+export const publishCourse = async (course, user) => {
+  if (course.status === "published") {
+    throw createError("Khóa học đã được xuất bản.", 409);
+  }
+
+  if (user.role !== "admin" && course.instructor.toString() !== user.id) {
+    throw createError("Bạn không có quyền xuất bản khóa học này.", 403);
+  }
+
+  // Xác thực lại tài khoản và hồ sơ giảng viên tại thời điểm xuất bản.
+  await validateInstructor(course.instructor);
+
+  if (!course.title?.trim() || !course.description?.trim()) {
+    throw createError("Khóa học cần có tiêu đề và mô tả.");
+  }
+  if (!course.category) {
+    throw createError("Vui lòng chọn danh mục cho khóa học.");
+  }
+  await validateCategory(course.category);
+  validatePrice(course.price);
+
+  const sections = await Section.find({ course: course._id }).select("_id").lean();
+  if (sections.length === 0) {
+    throw createError("Cần tạo ít nhất một chương trước khi xuất bản.");
+  }
+
+  const lessonCount = await Lesson.countDocuments({ course: course._id });
+  if (lessonCount === 0) {
+    throw createError("Cần tạo ít nhất một bài học trước khi xuất bản.");
+  }
+
+  course.status = "published";
+  course.publishedAt = new Date();
+  await course.save();
+  return course;
+};
+
+// 6. UNPUBLISH COURSE
+export const unpublishCourse = async (course, user) => {
+  if (course.status !== "published") {
+    throw createError("Khóa học hiện không ở trạng thái đã xuất bản.", 409);
+  }
+
+  if (user.role !== "admin" && course.instructor.toString() !== user.id) {
+    throw createError("Bạn không có quyền gỡ xuất bản khóa học này.", 403);
+  }
+
+  course.status = "draft";
+  course.publishedAt = null;
+  await course.save();
+  return course;
+};
+
+// 7. UPDATE COURSE
 // course được lấy từ req.course bởi requireCourseOwner.
 export const updateCourse = async (course, data, user) => {
   const isAdmin = user.role === "admin";
 
-  // Instructor chỉ sửa khóa học draft hoặc rejected.
-  if (
-    !isAdmin &&
-    !["draft", "rejected"].includes(course.status)
-  ) {
-    throw createError(
-      "Chỉ được chỉnh sửa khóa học ở trạng thái draft hoặc rejected.",
-      403
-    );
+  // Khóa học đã công khai phải được gỡ xuất bản trước khi chỉnh sửa nội dung.
+  if (!isAdmin && course.status !== "draft") {
+    throw createError("Vui lòng gỡ xuất bản khóa học trước khi chỉnh sửa.", 403);
   }
 
   const allowedFields = [
@@ -395,20 +454,14 @@ export const updateCourse = async (course, data, user) => {
   return course;
 };
 
-// 5. DELETE COURSE
+// 8. DELETE COURSE
 // course được lấy từ req.course bởi requireCourseOwner.
 export const deleteCourse = async (course, user) => {
   const isAdmin = user.role === "admin";
 
-  // Instructor chỉ được xóa draft hoặc rejected.
-  if (
-    !isAdmin &&
-    !["draft", "rejected"].includes(course.status)
-  ) {
-    throw createError(
-      "Chỉ được xóa khóa học ở trạng thái draft hoặc rejected.",
-      403
-    );
+  // Instructor chỉ được xóa khóa học nháp.
+  if (!isAdmin && course.status !== "draft") {
+    throw createError("Chỉ được xóa khóa học ở trạng thái draft.", 403);
   }
 
   // Không xóa khóa học đã có học viên đăng ký.

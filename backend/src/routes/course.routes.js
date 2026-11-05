@@ -8,6 +8,9 @@ import {
   getCourseById,
   updateCourse,
   deleteCourse,
+  getMyCourses,
+  publishCourse,
+  unpublishCourse,
 } from "../controllers/course.controller.js";
 
 import { authenticate } from "../middlewares/auth.middleware.js";
@@ -32,12 +35,38 @@ router.post(
   createCourse
 );
 
+// GET MY COURSES - phải đặt trước /:id để tránh bị hiểu "mine" là courseId.
+router.get(
+  "/mine",
+  authenticate,
+  authorize("instructor"),
+  getMyCourses
+);
+
 // GET COURSE LIST
 router.get(
   "/",
   authenticate,
   authorize("student", "instructor", "admin"),
   getCourses
+);
+
+// PUBLISH COURSE
+router.patch(
+  "/:id/publish",
+  authenticate,
+  authorize("instructor", "admin"),
+  requireCourseOwner,
+  publishCourse
+);
+
+// UNPUBLISH COURSE
+router.patch(
+  "/:id/unpublish",
+  authenticate,
+  authorize("instructor", "admin"),
+  requireCourseOwner,
+  unpublishCourse
 );
 
 // GET COURSE DETAIL
