@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getErrorMessage } from "../api/client";
-import { categoryApi, courseApi } from "../api/services";
+import { categoryApi, courseApi, uploadApi } from "../api/services";
 import Alert from "../components/Alert";
+import FileUploadButton from "../components/FileUploadButton";
+import { IMAGE_ACCEPT, MAX_IMAGE_MB } from "../utils/constants";
 import { useAuth } from "../context/auth-context";
 import { validateCourse } from "../utils/validation";
 
@@ -95,10 +97,24 @@ export default function CourseFormPage() {
         Mô tả *
         <textarea rows={5} value={form.description} onChange={update("description")} />
       </label>
-      <label>
-        Ảnh bìa (URL)
-        <input value={form.coverImageUrl} placeholder="https://..." onChange={update("coverImageUrl")} />
-      </label>
+      <div className="field">
+        <label>
+          Ảnh bìa (URL)
+          <input value={form.coverImageUrl} placeholder="https://..." onChange={update("coverImageUrl")} />
+        </label>
+        <div className="actions">
+          <FileUploadButton
+            label="Tải ảnh lên"
+            accept={IMAGE_ACCEPT}
+            maxSizeMb={MAX_IMAGE_MB}
+            upload={uploadApi.image}
+            onUploaded={(data) => setForm((current) => ({ ...current, coverImageUrl: data.url }))}
+            onError={setError}
+          />
+          <span className="muted small">JPG, PNG, WEBP, GIF · tối đa {MAX_IMAGE_MB}MB</span>
+        </div>
+        {form.coverImageUrl && <img className="cover-preview" src={form.coverImageUrl} alt="Xem trước ảnh bìa" />}
+      </div>
       <div className="form-row">
         <label>
           Danh mục *

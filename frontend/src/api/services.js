@@ -41,6 +41,19 @@ export const sectionApi = {
     body(api.put(`/courses/${courseId}/sections/reorder`, { sectionIds })),
 };
 
+const uploadFile = (path, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return body(api.post(path, formData));
+};
+
+export const uploadApi = {
+  // Trả về { url, publicId, width, height, sizeBytes }.
+  image: (file) => uploadFile("/uploads/image", file),
+  // Trả về { name, type, url, sizeBytes } — dùng trực tiếp làm một phần tử resources[] của bài học.
+  file: (file) => uploadFile("/uploads/file", file),
+};
+
 const lessonsPath = (courseId, sectionId) => `/courses/${courseId}/sections/${sectionId}/lessons`;
 
 export const lessonApi = {

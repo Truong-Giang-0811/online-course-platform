@@ -4,6 +4,7 @@ import { lessonApi, sectionApi } from "../api/services";
 import Alert from "./Alert";
 import LessonForm from "./LessonForm";
 import { formatDuration } from "../utils/constants";
+import { getYouTubeId } from "../utils/youtube";
 
 // Hoán đổi phần tử index với index + delta, trả về mảng ID theo thứ tự mới.
 const moveIds = (items, index, delta) => {
@@ -109,6 +110,11 @@ function SectionItem({ courseId, section, index, total, editable, onChanged, onE
                 <span>
                   {lessonIndex + 1}. {lesson.title}
                   {lesson.isPreview && <span className="badge badge-green">Preview</span>}
+                  {getYouTubeId(lesson.videoUrl) && (
+                    <a className="badge" href={lesson.videoUrl} target="_blank" rel="noreferrer">
+                      ▶ YouTube
+                    </a>
+                  )}
                   <span className="muted small"> · {formatDuration(lesson.durationSeconds)}</span>
                   {lesson.resources?.length > 0 && <span className="muted small"> · {lesson.resources.length} tài liệu</span>}
                 </span>

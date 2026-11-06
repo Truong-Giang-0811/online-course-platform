@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { uploadApi } from "../api/services";
 import Alert from "./Alert";
-import { RESOURCE_TYPES } from "../utils/constants";
+import FileUploadButton from "./FileUploadButton";
+import { MAX_FILE_MB, RESOURCE_ACCEPT, RESOURCE_TYPES, formatBytes } from "../utils/constants";
 import { validateLesson } from "../utils/validation";
+import { getYouTubeEmbedUrl } from "../utils/youtube";
 
 const toForm = (lesson) => ({
   title: lesson?.title || "",
@@ -34,6 +37,8 @@ export default function LessonForm({ lesson, onSubmit, onCancel }) {
 
   const update = (field) => (e) =>
     setForm({ ...form, [field]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
+
+  const embedUrl = getYouTubeEmbedUrl(form.videoUrl);
 
   const updateResource = (index, field, value) =>
     setForm({ ...form, resources: form.resources.map((r, i) => (i === index ? { ...r, [field]: value } : r)) });
@@ -72,6 +77,17 @@ export default function LessonForm({ lesson, onSubmit, onCancel }) {
           <input type="number" min={0} value={form.durationSeconds} onChange={update("durationSeconds")} />
         </label>
       </div>
+      {embedUrl ? (
+        <iframe
+          className="video-preview"
+          src={embedUrl}
+          title="Xem trước video YouTube"
+          allow="accelerometer; encrypted-media; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        form.videoUrl.trim() && <p className="muted small">Không nhận diện được link YouTube — sẽ lưu như link video thường.</p>
+      )}
       <label>
         Nội dung
         <textarea rows={4} value={form.content} onChange={update("content")} />
@@ -102,22 +118,35 @@ export default function LessonForm({ lesson, onSubmit, onCancel }) {
               value={r.url}
               onChange={(e) => updateResource(index, "url", e.target.value)}
             />
+            <span className="muted small">{r.sizeBytes > 0 ? formatBytes(r.sizeBytes) : ""}</span>
             <button
               type="button"
               className="btn btn-sm btn-danger"
+              aria-label={`Xóa tài liệu ${index + 1}`}
               onClick={() => setForm({ ...form, resources: form.resources.filter((_, i) => i !== index) })}
             >
               ✕
             </button>
           </div>
         ))}
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => setForm({ ...form, resources: [...form.resources, { name: "", type: "pdf", url: "", sizeBytes: 0 }] })}
-        >
-          + Thêm tài liệu
-        </button>
+        <div className="actions">
+          <FileUploadButton
+            label="Tải file lên"
+            accept={RESOURCE_ACCEPT}
+            maxSizeMb={MAX_FILE_MB}
+            upload={uploadApi.file}
+            onUploaded={(resource) => setForm((current) => ({ ...current, resources: [...current.resources, resource] }))}
+            onError={setError}
+          />
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => setForm({ ...form, resources: [...form.resources, { name: "", type: "pdf", url: "", sizeBytes: 0 }] })}
+          >
+            + Thêm link tài liệu
+          </button>
+          <span className="muted small">PDF, Word, PowerPoint, Excel, ZIP, RAR, TXT · tối đa {MAX_FILE_MB}MB</span>
+        </div>
       </fieldset>
 
       <div className="actions">

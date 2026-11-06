@@ -183,7 +183,10 @@ fieldset { border: 1px solid var(--border); border-radius: 8px; display: grid; g
 .lesson-list { margin-top: 0.5rem; padding-left: 1rem; }
 .lesson-item { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.35rem 0; border-top: 1px dashed var(--border); }
 .lesson-form { display: grid; gap: 0.75rem; padding: 0.75rem; border: 1px solid var(--primary); border-radius: 8px; }
-.resource-row { display: grid; grid-template-columns: 1fr 100px 2fr auto; gap: 0.4rem; }
+.resource-row { display: grid; grid-template-columns: 1fr 100px 2fr auto auto; gap: 0.4rem; align-items: center; }
+.field { display: grid; gap: 0.5rem; }
+.cover-preview { width: 100%; max-width: 360px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+.video-preview { width: 100%; max-width: 560px; aspect-ratio: 16 / 9; border: 0; border-radius: 8px; }
 .inline-form { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex: 1; }
 
 @media (max-width: 640px) {

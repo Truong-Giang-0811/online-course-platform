@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { categoryApi, courseApi, lessonApi, sectionApi } from "../api/services";
+import { categoryApi, courseApi, lessonApi, sectionApi, uploadApi } from "../api/services";
 import { makeAuth, renderWithAuth, users } from "../test/renderWithAuth";
 import CourseDetailPage from "./CourseDetailPage";
 import CourseFormPage from "./CourseFormPage";
@@ -15,6 +15,7 @@ vi.mock("../api/services", () => ({
   },
   sectionApi: { list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), reorder: vi.fn() },
   lessonApi: { list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), reorder: vi.fn() },
+  uploadApi: { image: vi.fn(), file: vi.fn() },
 }));
 
 const category = { _id: "c1", name: "Lập trình Web" };
@@ -87,6 +88,29 @@ describe("CourseFormPage", () => {
       category: "c1",
       price: 199000,
     });
+  });
+
+  it("tải ảnh bìa lên thì tự điền URL và hiện ảnh xem trước", async () => {
+    const url = "https://res.cloudinary.com/demo/image/upload/cover.png";
+    vi.mocked(uploadApi.image).mockResolvedValue({ data: { url } });
+    renderWithAuth(<CourseFormPage />, { auth: makeAuth({ user: users.instructor }), route: "/courses/new", path: "/courses/new" });
+
+    const image = new File(["png"], "anh-bia.png", { type: "image/png" });
+    await userEvent.upload(screen.getByLabelText("Tải ảnh lên"), image);
+
+    expect(uploadApi.image).toHaveBeenCalledWith(image);
+    expect(await screen.findByAltText("Xem trước ảnh bìa")).toHaveAttribute("src", url);
+    expect(screen.getByLabelText("Ảnh bìa (URL)")).toHaveValue(url);
+  });
+
+  it("ảnh lớn hơn 5MB bị chặn ngay trên trình duyệt", async () => {
+    renderWithAuth(<CourseFormPage />, { auth: makeAuth({ user: users.instructor }), route: "/courses/new", path: "/courses/new" });
+
+    const bigImage = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "lon.png", { type: "image/png" });
+    await userEvent.upload(screen.getByLabelText("Tải ảnh lên"), bigImage);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("File vượt quá 5MB.");
+    expect(uploadApi.image).not.toHaveBeenCalled();
   });
 
   it("admin phải nhập Instructor ID khi tạo khóa học", async () => {
@@ -162,6 +186,45 @@ describe("CourseDetailPage", () => {
       isPreview: true,
       resources: [],
     });
+  });
+
+  it("bài học: xem trước video YouTube và tải file text lên làm tài liệu", async () => {
+    vi.mocked(courseApi.get).mockResolvedValue({ data: makeCourse() });
+    vi.mocked(sectionApi.list).mockResolvedValue({ data: [{ _id: "s1", title: "Giới thiệu", order: 0 }] });
+    vi.mocked(lessonApi.create).mockResolvedValue({ data: {} });
+    const resource = { name: "Ghi chú bài học.txt", type: "txt", url: "https://res.cloudinary.com/demo/raw/upload/ghi-chu.txt", sizeBytes: 120 };
+    vi.mocked(uploadApi.file).mockResolvedValue({ data: resource });
+    renderDetail(users.instructor);
+
+    await userEvent.click(await screen.findByRole("button", { name: "+ Thêm bài học" }));
+    await userEvent.type(screen.getByLabelText("Tiêu đề bài học *"), "Giới thiệu JavaScript");
+    await userEvent.type(screen.getByLabelText("Video URL"), "https://youtu.be/PkZNo7MFNFg");
+    expect(screen.getByTitle("Xem trước video YouTube")).toHaveAttribute(
+      "src",
+      "https://www.youtube-nocookie.com/embed/PkZNo7MFNFg"
+    );
+
+    const txt = new File(["ghi chú"], "Ghi chú bài học.txt", { type: "text/plain" });
+    await userEvent.upload(screen.getByLabelText("Tải file lên"), txt);
+    expect(await screen.findByDisplayValue("Ghi chú bài học.txt")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Thêm bài học" }));
+    expect(lessonApi.create).toHaveBeenCalledWith("k1", "s1", expect.objectContaining({
+      videoUrl: "https://youtu.be/PkZNo7MFNFg",
+      resources: [resource],
+    }));
+  });
+
+  it("link không phải YouTube thì không hiện khung xem trước", async () => {
+    vi.mocked(courseApi.get).mockResolvedValue({ data: makeCourse() });
+    vi.mocked(sectionApi.list).mockResolvedValue({ data: [{ _id: "s1", title: "Giới thiệu", order: 0 }] });
+    renderDetail(users.instructor);
+
+    await userEvent.click(await screen.findByRole("button", { name: "+ Thêm bài học" }));
+    await userEvent.type(screen.getByLabelText("Video URL"), "https://example.com/video.mp4");
+
+    expect(screen.queryByTitle("Xem trước video YouTube")).not.toBeInTheDocument();
+    expect(screen.getByText(/Không nhận diện được link YouTube/)).toBeInTheDocument();
   });
 
   it("đổi thứ tự chương gửi đủ danh sách sectionIds", async () => {

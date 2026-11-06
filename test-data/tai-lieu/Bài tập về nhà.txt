@@ -1,0 +1,7 @@
+BÀI TẬP VỀ NHÀ
+
+Bài 1: Tạo trang HTML giới thiệu bản thân (họ tên, ảnh, sở thích).
+Bài 2: Dùng CSS đổi màu nền, căn giữa tiêu đề.
+Bài 3: Thêm một nút, khi bấm thì hiện thông báo "Xin chào!".
+
+Hạn nộp: cuối tuần.
