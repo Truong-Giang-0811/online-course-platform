@@ -1,16 +1,37 @@
-# React + Vite
+# Frontend – Online Course Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite + React Router + Axios. Gọi backend qua proxy `/api` → `http://localhost:5001` (xem `vite.config.js`).
 
-Currently, two official plugins are available:
+## Chạy
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev      # http://localhost:5173 (cần backend chạy ở cổng 5001)
+npm test         # Vitest + Testing Library
+npm run lint
+npm run build
+```
 
-## React Compiler
+Có thể đổi địa chỉ API bằng biến `VITE_API_URL` (khi đó backend cần bật CORS).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Chức năng (theo backend hiện có)
 
-## Expanding the ESLint configuration
+| Trang | Vai trò | API |
+| --- | --- | --- |
+| Đăng ký / Đăng nhập / Đăng xuất | Tất cả | `/api/auth/*` (tự refresh token khi access token hết hạn) |
+| Tài khoản, đăng xuất mọi phiên | Đã đăng nhập | `/api/auth/me`, `/api/auth/logout-all` |
+| Danh mục: tìm kiếm, sắp xếp, phân trang | Tất cả | `GET /api/categories` |
+| Danh mục: thêm, sửa, bật/tắt, xóa | Admin | `POST/PUT/PATCH/DELETE /api/categories` |
+| Khóa học: tìm kiếm, lọc danh mục/trạng thái, phân trang | Tất cả | `GET /api/courses`, `GET /api/courses/mine` |
+| Tạo / sửa / xóa / xuất bản / gỡ xuất bản khóa học | Giảng viên (chủ khóa học), Admin | `/api/courses/:id`, `/publish`, `/unpublish` |
+| Chương: thêm, đổi tên, xóa, sắp xếp | Giảng viên (chủ), Admin | `/api/courses/:courseId/sections` |
+| Bài học: thêm, sửa (video, nội dung, tài liệu, preview), xóa, sắp xếp | Giảng viên (chủ), Admin | `/api/courses/:courseId/sections/:sectionId/lessons` |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Cấu trúc
+
+- `src/api/client.js` – axios instance, lưu token, interceptor refresh (chỉ 1 request refresh cùng lúc vì backend xoay vòng refresh token).
+- `src/api/services.js` – các hàm gọi API theo từng nhóm route.
+- `src/context/` – `AuthProvider` + `useAuth`.
+- `src/pages/`, `src/components/` – giao diện.
+- `src/utils/validation.js` – kiểm tra dữ liệu giống quy tắc phía backend.
+- `*.test.js(x)` – test cơ bản.
