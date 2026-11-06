@@ -1,12 +1,15 @@
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
+import { fileURLToPath, URL } from 'node:url'
 
-// https://vite.dev/config/
+// Giữ nguyên proxy API và cấu hình Vitest hiện tại.
 export default defineConfig({
-  plugins: [react()],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
+  plugins: [react(), tailwindcss()],
   server: {
-    // Backend chạy ở cổng 5001 (backend/src/server.js) và chưa bật CORS,
-    // nên frontend gọi /api qua proxy của Vite.
     proxy: {
       '/api': 'http://localhost:5001',
     },

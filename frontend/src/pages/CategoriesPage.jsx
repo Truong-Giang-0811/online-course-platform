@@ -164,6 +164,7 @@ export default function CategoriesPage() {
       ) : categories.length === 0 ? (
         <p className="muted">Chưa có danh mục nào.</p>
       ) : (
+        <div className="table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -214,6 +215,7 @@ export default function CategoriesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <Pagination pagination={pagination} onChange={(page) => setFilters({ ...filters, page })} />

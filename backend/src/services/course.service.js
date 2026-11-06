@@ -94,6 +94,8 @@ const validateTags = async (tagIds = []) => {
 
   const tags = await Tag.find({
     _id: { $in: uniqueIds },
+    // Không cho gắn Tag đã ngừng hoạt động; vẫn chấp nhận document cũ chưa có isActive.
+    isActive: { $ne: false },
   }).select("_id");
 
   if (tags.length !== uniqueIds.length) {

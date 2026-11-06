@@ -1,0 +1,3 @@
+import ProductCard from '../product/ProductCard.jsx';
+import './ProductSection.css';
+export default function ProductSection({title,subtitle,products,formatPrice,onAddToCart}){return <section className="ph-product-section" id="products"><div className="ph-section-heading"><div><small>LỰA CHỌN DÀNH CHO BẠN</small><h2>{title}</h2><p>{subtitle}</p></div><span className="ph-count">{products.length} sản phẩm</span></div>{products.length?<div className="ph-product-grid">{products.map(p=><ProductCard key={p.id} product={p} formatPrice={formatPrice} onAddToCart={onAddToCart}/>)}</div>:<div className="ph-empty"><strong>Chưa tìm thấy sản phẩm phù hợp</strong><p>Thử từ khóa khác hoặc chọn danh mục “Tất cả”.</p></div>}</section>}

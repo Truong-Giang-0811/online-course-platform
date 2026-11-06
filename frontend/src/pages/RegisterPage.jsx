@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (user) return <Navigate to="/courses" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -27,7 +27,7 @@ export default function RegisterPage() {
     setError("");
     try {
       await register(form.fullName.trim(), form.email.trim(), form.password);
-      navigate("/courses", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, "Đăng ký thất bại."));
     } finally {

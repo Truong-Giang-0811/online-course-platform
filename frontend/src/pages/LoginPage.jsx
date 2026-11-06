@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (user) return <Navigate to="/courses" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -24,7 +24,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(form.email.trim(), form.password);
-      navigate(location.state?.from?.pathname || "/courses", { replace: true });
+      navigate(location.state?.from?.pathname || "/dashboard", { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, "Đăng nhập thất bại."));
     } finally {

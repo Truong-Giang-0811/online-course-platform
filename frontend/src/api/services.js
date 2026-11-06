@@ -20,6 +20,15 @@ export const categoryApi = {
   remove: (id) => body(api.delete(`/categories/${id}`)),
 };
 
+export const tagApi = {
+  list: (params) => body(api.get("/tags", { params })),
+  get: (id) => body(api.get(`/tags/${id}`)),
+  create: (payload) => body(api.post("/tags", payload)),
+  update: (id, payload) => body(api.put(`/tags/${id}`, payload)),
+  setStatus: (id, isActive) => body(api.patch(`/tags/${id}/status`, { isActive })),
+  remove: (id) => body(api.delete(`/tags/${id}`)),
+};
+
 export const courseApi = {
   list: (params) => body(api.get("/courses", { params })),
   mine: (params) => body(api.get("/courses/mine", { params })),

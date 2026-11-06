@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getErrorMessage } from "../api/client";
-import { categoryApi, courseApi, uploadApi } from "../api/services";
+import { categoryApi, courseApi, tagApi, uploadApi } from "../api/services";
 import Alert from "../components/Alert";
 import FileUploadButton from "../components/FileUploadButton";
 import { IMAGE_ACCEPT, MAX_IMAGE_MB } from "../utils/constants";
@@ -18,16 +18,23 @@ export default function CourseFormPage() {
 
   const [form, setForm] = useState(EMPTY);
   const [categories, setCategories] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    categoryApi
-      .list({ limit: 50, sortBy: "name", sortOrder: "asc", ...(user.role === "admin" ? { isActive: true } : {}) })
-      .then((res) => setCategories(res.data))
+    Promise.all([
+      categoryApi.list({ limit: 50, sortBy: "name", sortOrder: "asc", ...(user.role === "admin" ? { isActive: true } : {}) }),
+      tagApi.list({ limit: 50, isActive: true, sortBy: "name", sortOrder: "asc" }),
+    ])
+      .then(([categoryResult, tagResult]) => {
+        setCategories(categoryResult.data);
+        setTags(tagResult.data);
+      })
       .catch((err) => setError(getErrorMessage(err)));
-  }, [user.role]);
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -43,6 +50,7 @@ export default function CourseFormPage() {
           price: String(c.price ?? 0),
           instructor: c.instructor?._id || "",
         });
+        setSelectedTags((c.tags || []).map((tag) => tag._id || tag));
       })
       .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -67,6 +75,7 @@ export default function CourseFormPage() {
       description: form.description.trim(),
       coverImageUrl: form.coverImageUrl.trim(),
       category: form.category,
+      tags: selectedTags,
       price: Number(form.price),
     };
     if (!isEdit && user.role === "admin") payload.instructor = form.instructor.trim();
@@ -114,6 +123,32 @@ export default function CourseFormPage() {
           <span className="muted small">JPG, PNG, WEBP, GIF · tối đa {MAX_IMAGE_MB}MB</span>
         </div>
         {form.coverImageUrl && <img className="cover-preview" src={form.coverImageUrl} alt="Xem trước ảnh bìa" />}
+      </div>
+      <div className="field">
+        <span className="label">Tag khóa học</span>
+        {tags.length === 0 ? (
+          <p className="muted small">Chưa có Tag đang hoạt động. Admin có thể tạo Tag trong mục Quản lý Tag.</p>
+        ) : (
+          <div className="tags" role="group" aria-label="Chọn Tag cho khóa học">
+            {tags.map((tag) => (
+              <label key={tag._id} className="tag-option">
+                <input
+                  type="checkbox"
+                  checked={selectedTags.includes(tag._id)}
+                  onChange={(event) => {
+                    setSelectedTags((current) =>
+                      event.target.checked
+                        ? [...current, tag._id]
+                        : current.filter((id) => id !== tag._id)
+                    );
+                  }}
+                />
+                <span>#{tag.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        <span className="muted small">Có thể chọn nhiều Tag để giúp học viên tìm kiếm khóa học.</span>
       </div>
       <div className="form-row">
         <label>
